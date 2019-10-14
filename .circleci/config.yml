@@ -1,0 +1,56 @@
+version: 2.1
+
+executors:
+  mysql_8_0:
+    docker:
+      - image: circleci/ruby:2.6
+      - image: circleci/mysql:8.0
+        command: --default-authentication-plugin=mysql_native_password
+  mysql_5_7:
+    docker:
+      - image: circleci/ruby:2.6
+      - image: circleci/mysql:5.7
+  mysql_5_6:
+    docker:
+      - image: circleci/ruby:2.6
+      - image: circleci/mysql:5.6
+
+commands:
+  run_test:
+    steps:
+      - run: dockerize -wait tcp://localhost:3306 -timeout 2m
+
+      - checkout
+
+      - run: gem install bundler
+      - run: bundle install
+      - run: bundle exec ruby test.rb
+
+      - store_artifacts:
+          path: result.dump
+
+jobs:
+  test_mysql_5_6:
+    executor: mysql_5_6
+    steps:
+      - run_test
+  test_mysql_5_7:
+    executor: mysql_5_7
+    steps:
+      - run_test
+  test_mysql_8_0:
+    executor: mysql_8_0
+    steps:
+      - run_test
+
+workflows:
+  version: 2
+  mysql_5_6:
+    jobs:
+      - test_mysql_5_6
+  mysql_5_7:
+    jobs:
+      - test_mysql_5_7
+  mysql_8_0:
+    jobs:
+      - test_mysql_8_0
